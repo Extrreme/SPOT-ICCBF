@@ -10,8 +10,8 @@ warning('off','all')
 
 parentDirectory = fileparts(cd);
 addpath(parentDirectory)          
-addpath("functions")
-addpath("Post Process")
+addpath("other/")
+addpath("CBF/")
 
 %% Start the graphical user interface or set the appropriate variables:
 
@@ -31,7 +31,6 @@ docking_offset = [0.165 0.427 -pi/2]';          % Docking chaser offset [m, m, r
 beta = pi/2-atan2(docking_offset(1), docking_offset(2)); % Docking port position vector angle [rad]
 
 %% Control Barrier Functions
-tv_CBF = 1;
 
 % Maximum Thrust
 u_max = 0.1.*[1 1 (0.3/2)]';
@@ -67,24 +66,47 @@ k_dock = 5;
 
 %% Initial Conditions
 
-test_case = 0;
+tv_CBF = 1;
+ic_CBF = 0;
+
+test_case = 1;
 
 if test_case == 0
     x_RED_0 = [3 2 0 0 0 0]';
     x_BLACK_0 = [0.5 0.5 315*d2r 0.01 0.01 1*d2r]';
     x_BLUE_0 = [1.5 1.25 0 0.015 0.0075 0]';
+
+    a_KOZ_tar = [2.125, 2.138, 0.091];
+    a_KOZ_obs = [2.459, 0.575, 0.707];
+    a_LOS = [0.458, 0.969, 0.144];
+    k_dock = 5.33;
 elseif test_case == 1 
     x_RED_0 = [3.2 1.8 0 0 0 0]';
     x_BLACK_0 = [2.0 2.2 270*d2r -0.005 -0.005 -2.5*d2r]';
     x_BLUE_0 = [2.5 1.25 0 -0.01 -0.01 0]';
+
+    a_KOZ_tar = [2.263, 2.201, 0.428];
+    a_KOZ_obs = [1.098, 2.137, 0.468];
+    a_LOS = [1.436, 0.044, 0.046];
+    k_dock = 5.21;
 elseif test_case == 2
     x_RED_0 = [1.5 2 pi 0 0 0]';
     x_BLACK_0 = [2.2 0.2 270*d2r -0.005 0.005 1.5*d2r]';
     x_BLUE_0 = [2 1.2 0 -0.015 0 0]';
+
+    a_KOZ_tar = [2.555, 2.609, 0.270];
+    a_KOZ_obs = [0.625, 1.196, 0.548];
+    a_LOS = [1.946, 0.468, 0.316];
+    k_dock = 5.72;
 elseif test_case == 3
     x_RED_0 = [3 2 0 0 0 0]';
     x_BLACK_0 = [xLength/2 yLength/2 90*d2r 0 0 0]';
     x_BLUE_0 = [0 0 0 0 0 0]';
+
+    a_KOZ_tar = [1.784, 1.010, 0.449];
+    a_KOZ_obs = [2.926, 0.049, 0.081];
+    a_LOS = [1.249, 2.045, 0.759];
+    k_dock = 2.64;
 end
 
 x_RED_0(3) = wrapAngle(rotateToFace(x_RED_0(3), x_BLACK_0(1:2)-(x_RED_0(1:2) + rotz(x_RED_0(3))*sensor_offset)) + docking_offset(3) + pi/2);
@@ -98,7 +120,7 @@ appHandle.LoadSimulinkDiagram();
 % Edit active platforms
 appHandle.REDCheckBox.Value    = 1;
 appHandle.BLACKCheckBox.Value  = 1;
-appHandle.BLUECheckBox.Value   = 0;
+appHandle.BLUECheckBox.Value   = 1;
 appHandle.ARMCheckBox.Value    = 0;
 
 appHandle.ConfirmSettings();  
