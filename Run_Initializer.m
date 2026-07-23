@@ -10,8 +10,8 @@ warning('off','all')
 
 parentDirectory = fileparts(cd);
 addpath(parentDirectory)          
-addpath("other/")
-addpath("CBF/")
+addpath(genpath("other/"))
+addpath(genpath("CBF/"))
 
 %% Start the graphical user interface or set the appropriate variables:
 
@@ -25,18 +25,23 @@ r2d = 1/d2r;                                    % Radians to degrees conversion
 
 %% General
 
+F_dist_mat = [-1 -1  0  0  1  1  0  0;
+               0  0  1  1  0  0 -1 -1; 
+               thruster_dist2CG_RED' ./ 1000];
+F_dist_mat_pinv = pinv(F_dist_mat);
+
 % Docking
-docking_face = [0 1]';                          % Docking face normal vector
+docking_face = [0 1]';                           % Docking face normal vector
 docking_offset = [0.165 0.427 -pi/2]';          % Docking chaser offset [m, m, rad]
 beta = pi/2-atan2(docking_offset(1), docking_offset(2)); % Docking port position vector angle [rad]
 
 %% Control Barrier Functions
 
 % Maximum Thrust
-u_max = 0.1.*[1 1 (0.3/2)]';
+u_max = 0.1.*[1 1 (0.3/2)-0.08]';
 
-% Target Keep-out-Zone
-r_KOZ_tar_min = [0.8; 0.42];
+% Target KOZ CBF
+r_KOZ_tar_min = [0.8; 0.43];
 r_KOZ_tar_ini = [0.85; 0.85];
 
 t_s = 4;                                        % Scaling time [s]
@@ -44,69 +49,62 @@ gamma = (0.95)^(baseRate/t_s);                  % KOZ scaling factor
 eta = sqrt(0.5);                                % KOZ scaling linear tolerance [m]
 zeta = 10*d2r;                                  % KOZ scaling angular tolerance [rad]
 
-% Obstacle Keep-out-Zone
+% Obstacle KOZ CBF
 r_KOZ_obs = 0.43*[1 1]';
 
-% Target Line-of-Sight
-sensor_FOV = 40*d2r;                            % Sensor FOV [rad]
+% Target LOS CBF
+sensor_FOV = 45*d2r;                            % Sensor FOV [rad]
 sensor_offset = [0.145-0.042 -0.0395]';         % Sensor body-fixed offset
 sensor_normal = [1 0]';                         % Sensor normal vector
 sensor_target = [0.0825 0.2516]';               % Desired pointing location (targed body-fixed) [m,m]
 
-% Lyapunov Function
-p_clf = 10;
 
+% Rendezvous and Docking CLF
 V = 6*eye(3);
 lambda_dock = 1;
 
 Q_dock = [(lambda_dock^2)*eye(3) lambda_dock*V;
               lambda_dock*V           V^2];
 
+p_clf = 10;
 k_dock = 5;
+
+%% Cost Function
+
+H = 2.*diag([1 1 1 p_clf 0 0 0]);
+f = [0 0 0 0 0 0 0]';
+
+%% Assemble CBFs
+
+tv_CBF = 1;
+ic_CBF = 1;
+
+a_KOZ_tar = [0.4, 0.4, 0.4]';
+a_KOZ_obs = [0.4, 0.4, 0.4]';
+a_LOS = [0.4, 0.4, 0.4]';
+
+assemble_CBFs(u_max, tv_CBF, ic_CBF, "./CBF/CBF_gen/");
 
 %% Initial Conditions
 
-tv_CBF = 1;
-ic_CBF = 0;
-
-test_case = 1;
+test_case = 2;
 
 if test_case == 0
     x_RED_0 = [3 2 0 0 0 0]';
-    x_BLACK_0 = [0.5 0.5 315*d2r 0.01 0.01 1*d2r]';
-    x_BLUE_0 = [1.5 1.25 0 0.015 0.0075 0]';
-
-    a_KOZ_tar = [2.125, 2.138, 0.091];
-    a_KOZ_obs = [2.459, 0.575, 0.707];
-    a_LOS = [0.458, 0.969, 0.144];
-    k_dock = 5.33;
+    x_BLACK_0 = [0.5 0.5 315*d2r 0.01 0.01  1*d2r]';
+    x_BLUE_0 = [1.6 1.25 0 0.015 0.0075 0]';
 elseif test_case == 1 
     x_RED_0 = [3.2 1.8 0 0 0 0]';
-    x_BLACK_0 = [2.0 2.2 270*d2r -0.005 -0.005 -2.5*d2r]';
+    x_BLACK_0 = [2.0 2.2 270*d2r -0.005 -0.005 -2*d2r]';
     x_BLUE_0 = [2.5 1.25 0 -0.01 -0.01 0]';
-
-    a_KOZ_tar = [2.263, 2.201, 0.428];
-    a_KOZ_obs = [1.098, 2.137, 0.468];
-    a_LOS = [1.436, 0.044, 0.046];
-    k_dock = 5.21;
 elseif test_case == 2
     x_RED_0 = [1.5 2 pi 0 0 0]';
     x_BLACK_0 = [2.2 0.2 270*d2r -0.005 0.005 1.5*d2r]';
     x_BLUE_0 = [2 1.2 0 -0.015 0 0]';
-
-    a_KOZ_tar = [2.555, 2.609, 0.270];
-    a_KOZ_obs = [0.625, 1.196, 0.548];
-    a_LOS = [1.946, 0.468, 0.316];
-    k_dock = 5.72;
 elseif test_case == 3
     x_RED_0 = [3 2 0 0 0 0]';
-    x_BLACK_0 = [xLength/2 yLength/2 90*d2r 0 0 0]';
+    x_BLACK_0 = [xLength/2 yLength/2 45*d2r 0 0 1*d2r]';
     x_BLUE_0 = [0 0 0 0 0 0]';
-
-    a_KOZ_tar = [1.784, 1.010, 0.449];
-    a_KOZ_obs = [2.926, 0.049, 0.081];
-    a_LOS = [1.249, 2.045, 0.759];
-    k_dock = 2.64;
 end
 
 x_RED_0(3) = wrapAngle(rotateToFace(x_RED_0(3), x_BLACK_0(1:2)-(x_RED_0(1:2) + rotz(x_RED_0(3))*sensor_offset)) + docking_offset(3) + pi/2);
@@ -130,7 +128,7 @@ appHandle.DurPhase0EditField.Value = 10;
 appHandle.DurPhase1EditField.Value = 10;
 appHandle.DurPhase2EditField.Value = 30;
 
-appHandle.SubPhase1EditField.Value = 100;
+appHandle.SubPhase1EditField.Value = 150;
 appHandle.SubPhase2EditField.Value = 0;
 appHandle.SubPhase3EditField.Value = 0;
 appHandle.SubPhase4EditField.Value = 0;
@@ -167,7 +165,7 @@ appHandle.SubAppInitialConditions.UpdateInitialConditions();
 %% Custom Draw Functions
 
 function [x,y] = drawTargetKOZ(dataClass, idx)
-    r_KOZ = dataClass.Target_KOZ.Data(idx,:);
+    r_KOZ = dataClass.CBF_Target_KOZ_Radius.Data(idx,:);
 
     BLACK_Px = dataClass.BLACK_Px_m.Data(idx);
     BLACK_Py = dataClass.BLACK_Py_m.Data(idx);
@@ -178,7 +176,7 @@ function [x,y] = drawTargetKOZ(dataClass, idx)
     [x, y] = deal(KOZ(:,1), KOZ(:,2));
 end  
 
-appHandle.registerCustomDrawing("Target KOZ", @drawTargetKOZ, @patch, ...
+appHandle.registerCustomDrawing("Target Keep-Out-Zone", @drawTargetKOZ, @patch, ...
     {'FaceColor', 'black', 'FaceAlpha', 0.1, 'EdgeColor', 'black', 'EdgeAlpha', 0.3, 'LineStyle', '--',})
 
 function [x,y] = drawObstacleKOZ(dataClass, idx)
@@ -193,7 +191,7 @@ function [x,y] = drawObstacleKOZ(dataClass, idx)
     [x, y] = deal(KOZ(:,1), KOZ(:,2));
 end   
 
-appHandle.registerCustomDrawing("Obstacle KOZ", @drawObstacleKOZ, @patch, ...    
+appHandle.registerCustomDrawing("Obstacle Keep-Out-Zone", @drawObstacleKOZ, @patch, ...    
     {'FaceColor', 'blue', 'FaceAlpha', 0.1, 'EdgeColor', 'blue', 'EdgeAlpha', 0.3, 'LineStyle', '--',})
 
 function [x,y] = drawLOS(dataClass, idx)
@@ -217,13 +215,8 @@ function [x,y] = drawLOS(dataClass, idx)
     y = [r1(2), yp, ym, r1(2)];
 end
 
-appHandle.registerCustomDrawing("FOV", @drawLOS, @patch, ...
+appHandle.registerCustomDrawing("Field-of-View", @drawLOS, @patch, ...
     {'FaceColor', 'r', 'EdgeColor', 'r', 'EdgeAlpha', 0.2, 'FaceAlpha', 0.05, 'LineStyle', '--'})
-
-function [x,y] = drawDesiredPosition(dataClass, idx)    
-    x = dataClass.RED_Px_Desired_m.Data(idx);
-    y = dataClass.RED_Py_Desired_m.Data(idx);
-end
 
 %% Place any custom variables or overwriting variables in this section
 
@@ -314,4 +307,15 @@ function [x_plus, y_plus, x_minus, y_minus] = calculateLineEndpoints(x1, y1, x2,
 
     x_minus = x2 + lineLength * cos(theta_minus);
     y_minus = y2 + lineLength * sin(theta_minus);
+end
+
+function [Ad, Bd] = discretize(A, B, dt)
+    if size(A,1) ~= size(B,1)
+        error('The first dimension of A and B must be equal')
+    end
+
+    phi = expm([A B; zeros(size(B,2),size(A,2)+size(B,2))]*dt);
+    
+    Ad = phi(1:size(A,1), 1:size(A,2));
+    Bd = phi(1:size(B,1), size(A,2)+1:size(A,2)+size(B,2));
 end

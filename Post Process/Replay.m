@@ -38,12 +38,14 @@ MAT_FILEPATHS = fullfile(MAT_DIR, MAT_FILES);
 names = {};
 lineStyles = {"-", "--", "-."};
 for k = 1:numel(MAT_FILEPATHS)
-    if contains(MAT_FILEPATHS{k}, "TVICCBF")
-        names{k} = "TVICCBF";
-    elseif contains(MAT_FILEPATHS{k}, "TVCBF")
+    if startsWith(MAT_FILES{k}, "ICTVCBF")
+        names{k} = "ICTVCBF";
+    elseif startsWith(MAT_FILES{k}, "TVCBF")
         names{k} = "TVCBF";
-    elseif contains(MAT_FILEPATHS{k}, "CBF")
+    elseif startsWith(MAT_FILES{k}, "CBF")
         names{k} = "CBF";
+    else
+        names{k} = MAT_FILES{k};
     end
 end
 
@@ -73,14 +75,13 @@ trials = [exp_trials sim_trials];
 
 fig = figure('Color', 'w');
 
-frameStep = 3;
+frameStep = 1;
 counter = 1;
 for frame = 1:frameStep:min(cellfun(@numel, [exp_idx sim_idx]))
-    clf
     patch([0, xLength, xLength, 0], [0, 0, yLength, yLength], 'black', 'FaceAlpha', 0.08, 'HandleVisibility', 'off'); 
     hold on
 
-    text(2,2, ["Time: ", sim_trials{1}.time(frame)-sim_trials{1}.time(1) ]);
+    %text(2,2, ["Time: ", sim_trials{1}.time(frame)-sim_trials{1}.time(1) ]);
     for j = 1:numel(trials)
         plot(0,0,'r', 'LineStyle', lineStyles{j}, 'DisplayName', names{j});
 
@@ -112,7 +113,7 @@ for frame = 1:frameStep:min(cellfun(@numel, [exp_idx sim_idx]))
         r1 = [trials{j}.RED_Px(frame); trials{j}.RED_Py(frame)] + R*sensor_offset;
         r2 = r1 + R*sensor_normal;
     
-        [xp, yp, xm, ym] = calculateLineEndpoints(r1(1), r1(2), r2(1), r2(2), sensor_FOV, 10);
+        [xp, yp, xm, ym] = calculateLineEndpoints(r1(1), r1(2), r2(1), r2(2), sensor_FOV, 6);
     
         patch([r1(1), xp, xm, r1(1)], [r1(2), yp, ym, r1(2)], 'r', 'EdgeColor', 'r', 'EdgeAlpha', 0.1, 'FaceAlpha', 0.025, 'LineStyle', '--', 'HandleVisibility', 'off')
     end
@@ -131,25 +132,27 @@ for frame = 1:frameStep:min(cellfun(@numel, [exp_idx sim_idx]))
 
     legend
 
-    getframe(gcf);
+    movieVector(counter) =  getframe(gcf);
     counter = counter+1;
+
+    clf
 end
 
-% close(gcf)
-% 
-% [file, path] = uiputfile('*.mp4', 'Save File As');
-% 
-% if isequal(file, 0) || isequal(path,0)
-%     return
-% end
-% 
-% myWriter = VideoWriter(strcat(path, '\', file), 'MPEG-4');
-% myWriter.FrameRate = round(1/(baseRate*frameStep));
-% open(myWriter);
-% for i=1:length(movieVector)
-%     writeVideo(myWriter, movieVector(i));
-% end
-% close(myWriter);
+%%
+
+[file, path] = uiputfile('*.mp4', 'Save File As');
+
+if isequal(file, 0) || isequal(path,0)
+    return
+end
+
+myWriter = VideoWriter(strcat(path, '\', file), 'MPEG-4');
+myWriter.FrameRate = round(1/(baseRate*frameStep));
+open(myWriter);
+for i=1:length(movieVector)
+    writeVideo(myWriter, movieVector(i));
+end
+close(myWriter);
 
 
 %% Functions
@@ -191,7 +194,7 @@ function [data, idx, exp] = loadData(mat_file)
     data.BLACK_Fy = dataClass.BLACK_Fy_N.Data(idx,:);
     data.BLACK_Tz = dataClass.BLACK_Tz_Nm.Data(idx,:);
 
-    data.KOZ = dataClass.Target_KOZ.Data(idx,:);
+    data.KOZ = dataClass.CBF_Target_KOZ_Radius.Data(idx,:);
 
     idx = 1:length(data.time);
 end

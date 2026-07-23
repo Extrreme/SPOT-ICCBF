@@ -15,6 +15,15 @@ sensor_target = [0.0825 0.2516]';               % Desired pointing location (tar
 
 r_KOZ_obs = 0.43*[1 1]';
 
+thruster_dist2CG_RED = [84.3818181818182
+                        -53.6181818181818
+                        54.3818181818182
+                        -83.6181818181818
+                        53.6181818181818
+                        -84.3818181818182
+                        83.6181818181818
+                        -54.3818181818182];
+ 
 %% Select Data File
 
 [MAT_FILES, MAT_DIR] = uigetfile('*', 'Select the MAT file', '../Saved Data/', 'MultiSelect', 'on');
@@ -68,9 +77,14 @@ for k = 1:numel(MAT_FILEPATHS)
     u_RED_norm{k} = [];
     for j = 1:length(u_RED{k})
         u_RED_norm{k}(j,:) = [norm(u_RED{k}(j,1:2)), norm(u_RED{k}(j,3))];
+        F_RED_tot{k}(j,:) = sum(abs(dataClass{k}.RED_Fth(j,:)));
+        F_RED_tot2{k}(j,:) = sum(abs(u_RED{k}(j,1:2))) + norm(u_RED{k}(j,3))/mean(abs(thruster_dist2CG_RED)./1000);
+        F_RED_tot3{k}(j,:) = sum(abs(dataClass{k}.RED_Fth2(j,:)));
     end
 
-    L_RED{k} = [trapz(dataClass{k}.Time, u_RED_norm{k}(:,1)), trapz(dataClass{k}.Time, u_RED_norm{k}(:,2))];
+    L_RED{k} = trapz(dataClass{k}.Time, F_RED_tot{k});
+    L_RED2{k} = trapz(dataClass{k}.Time, F_RED_tot2{k});
+    L_RED3{k} = trapz(dataClass{k}.Time, F_RED_tot3{k});
 end
 
 %% Check and Plot Constraints
@@ -121,7 +135,7 @@ tiledlayout(3, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 nexttile
 hold on
 for k = 1:numel(dataClass)
-    plot(dataClass{j}.Time - dataClass{j}.Time(1), dataClass{k}.RED_Fx, 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
+    plot(dataClass{k}.Time - dataClass{k}.Time(1), dataClass{k}.RED_Fx, 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
 end
 legend
 grid
@@ -130,7 +144,7 @@ set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 
 nexttile
 for k = 1:numel(dataClass)
-    plot(dataClass{j}.Time - dataClass{j}.Time(1), dataClass{k}.RED_Fy, 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
+    plot(dataClass{k}.Time - dataClass{k}.Time(1), dataClass{k}.RED_Fy, 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
 end
 grid
 ylabel("F_y [N]")
@@ -139,40 +153,32 @@ set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 nexttile
 hold on
 for k = 1:numel(dataClass)
-    plot(dataClass{j}.Time - dataClass{j}.Time(1), dataClass{k}.RED_Tz, 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
+    plot(dataClass{k}.Time - dataClass{k}.Time(1), dataClass{k}.RED_Tz, 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
 end
 grid
 xlabel("Time [s]")
 ylabel("T_z [Nm]")
 set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 
+%% Plot Convergence
+
 figure
-tiledlayout(2, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
-
-nexttile
 hold on
 for k = 1:numel(dataClass)
-    plot(dataClass{j}.Time - dataClass{j}.Time(1), u_RED_norm{k}(:,1), 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
-end
-grid
-legend
-ylabel("|F| [N]")
-set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
-
-nexttile
-hold on
-for k = 1:numel(dataClass)
-    plot(dataClass{j}.Time - dataClass{j}.Time(1), u_RED_norm{k}(:,2), 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
+    plot(dataClass{k}.Time - dataClass{k}.Time(1), dataClass{k}.CBF_res(:,1), 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
 end
 grid
 xlabel("Time [s]")
-ylabel("|T| [Nm]")
+ylabel("Convergence")
 set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
+legend
 
 %% Print Impulses
 
 for k = 1:numel(dataClass)
-    fprintf(names{k} + " - Force: " + L_RED{k}(1) + " Ns" + " - Torque: "  + L_RED{k}(2) + " Nms\n")
+    fprintf(names{k} + " - Fuel (Actual): " + L_RED{k} + " Ns\n")
+    fprintf(names{k} + " - Fuel (Estimated): " + L_RED2{k} + " Ns\n")
+    fprintf(names{k} + " - Fuel (Actual Saturated): " + L_RED3{k} + " Ns\n")
 end
 
 %% Functions
@@ -198,7 +204,9 @@ function [data, idx, exp] = loadData(mat_file)
     data.RED_Px = dataClass.RED_Px_m.Data(idx,:);
     data.RED_Py = dataClass.RED_Py_m.Data(idx,:);
     data.RED_Rz = dataClass.RED_Rz_rad.Data(idx,:);
-    
+    data.RED_Fth = dataClass.RED_Thruster_Controls_N.Data(idx,:);
+    data.RED_Fth2 = dataClass.RED_Saturated_Thruster_Controls_N.Data(idx,:);
+
     data.BLACK_Px = dataClass.BLACK_Px_m.Data(idx,:);
     data.BLACK_Py = dataClass.BLACK_Py_m.Data(idx,:);
     data.BLACK_Rz = dataClass.BLACK_Rz_rad.Data(idx,:);
@@ -215,7 +223,8 @@ function [data, idx, exp] = loadData(mat_file)
     data.BLACK_Fy = dataClass.BLACK_Fy_N.Data(idx,:);
     data.BLACK_Tz = dataClass.BLACK_Tz_Nm.Data(idx,:);
 
-    data.KOZ = dataClass.Target_KOZ.Data(idx,:);
+    data.KOZ = dataClass.CBF_Target_KOZ_Radius.Data(idx,:);
 
+    data.CBF_res = dataClass.CBF_QP_Solver_Result.Data(idx,:);
     idx = 1:length(data.Time);
 end
