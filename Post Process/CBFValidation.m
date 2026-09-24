@@ -8,21 +8,12 @@ addpath("../CBF/")
 %% Params
 d2r = pi/180;
 
-sensor_FOV = 40*d2r;                            % Sensor FOV [rad]
-sensor_offset = [0.145-0.042 -0.0395]';         % Sensor body-fixed offset
+sensor_FOV = 35*d2r;                            % Sensor FOV [rad]
+sensor_offset = [0.15 -0.0825]';         % Sensor body-fixed offset
 sensor_normal = [1 0]';                         % Sensor normal vector
 sensor_target = [0.0825 0.2516]';               % Desired pointing location (targed body-fixed) [m,m]
 
-r_KOZ_obs = 0.43*[1 1]';
-
-thruster_dist2CG_RED = [84.3818181818182
-                        -53.6181818181818
-                        54.3818181818182
-                        -83.6181818181818
-                        53.6181818181818
-                        -84.3818181818182
-                        83.6181818181818
-                        -54.3818181818182];
+r_KOZ_obs = 0.45*[1 1]';
  
 %% Select Data File
 
@@ -43,7 +34,7 @@ for j = 1:numel(MAT_FILEPATHS)
 end
 
 colors = {"r", "k", "b", "r", "k", "b", "r", "k", "b"};
-lineStyles = {"-", "-", "-", "--", "--", "--", "..", "..", ".."};
+lineStyles = {"-", "-", "-", "--", "--", "--", ":", ":", ":"};
 
 %% Compute Constraints
 
@@ -71,20 +62,17 @@ for k = 1:numel(MAT_FILEPATHS)
         h_KOZ_tar{k}(j,:) = A_tar*(x_RED(j,1)-x_BLACK(j,1))^2 + B_tar*(x_RED(j,2)-x_BLACK(j,2))^2 + C_tar*(x_RED(j,1)-x_BLACK(j,1))*(x_RED(j,2)-x_BLACK(j,2))-1;
         h_KOZ_obs{k}(j,:) = A_obs*(x_RED(j,1)-x_BLUE(j,1))^2 + B_obs*(x_RED(j,2)-x_BLUE(j,2))^2 + C_obs*(x_RED(j,1)-x_BLUE(j,1))*(x_RED(j,2)-x_BLUE(j,2))-1;
     end
-
-    u_RED{k} = [dataClass{k}.RED_Fx(idx{k}) dataClass{k}.RED_Fy(idx{k}) dataClass{k}.RED_Tz(idx{k})];
     
-    u_RED_norm{k} = [];
     for j = 1:length(u_RED{k})
-        u_RED_norm{k}(j,:) = [norm(u_RED{k}(j,1:2)), norm(u_RED{k}(j,3))];
         F_RED_tot{k}(j,:) = sum(abs(dataClass{k}.RED_Fth(j,:)));
-        F_RED_tot2{k}(j,:) = sum(abs(u_RED{k}(j,1:2))) + norm(u_RED{k}(j,3))/mean(abs(thruster_dist2CG_RED)./1000);
-        F_RED_tot3{k}(j,:) = sum(abs(dataClass{k}.RED_Fth2(j,:)));
     end
 
     L_RED{k} = trapz(dataClass{k}.Time, F_RED_tot{k});
-    L_RED2{k} = trapz(dataClass{k}.Time, F_RED_tot2{k});
-    L_RED3{k} = trapz(dataClass{k}.Time, F_RED_tot3{k});
+
+    h_KOZ_tar_min{k} = min(h_KOZ_tar{k});
+    h_KOZ_obs_min{k} = min(h_KOZ_obs{k});
+    h_LOS_min{k} = min(h_LOS{k});
+
 end
 
 %% Check and Plot Constraints
@@ -94,10 +82,11 @@ tiledlayout(3, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 
 nexttile
 hold on
+
 for j = 1:numel(dataClass)
     plot(dataClass{j}.Time - dataClass{j}.Time(1), h_KOZ_tar{j}, 'Color', colors{j}, 'LineWidth', 1.05, 'LineStyle', lineStyles{j}, 'DisplayName', names{j});
-    %plot(dataClass{j}.Time(h_KOZ_tar{j} < 0), h_KOZ_tar{j}(h_KOZ_tar{j} < 0), 'Color', colors{j}, 'LineWidth', 1.05, 'LineStyle', lineStyles{j}, 'HandleVisibility', 'off', 'Marker', 'x')
 end
+
 grid
 legend
 ylabel("h_{KOZ,tar}")
@@ -106,10 +95,11 @@ set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 
 nexttile
 hold on
+
 for j = 1:numel(dataClass)
     plot(dataClass{j}.Time - dataClass{j}.Time(1), h_KOZ_obs{j}, 'Color', colors{j}, 'LineWidth', 1.05, 'LineStyle', lineStyles{j}, 'DisplayName', names{j});
-    %plot(dataClass{j}.Time(h_KOZ_obs{j} < 0), h_KOZ_obs{j}(h_KOZ_obs{j} < 0), 'Color', colors{j}, 'LineWidth', 1.05, 'LineStyle', lineStyles{j}, 'HandleVisibility', 'off', 'Marker', 'x')
 end
+
 grid
 ylabel("h_{KOZ,obs}")
 ylim([min(cell2mat(h_KOZ_obs(:))) max(cell2mat(h_KOZ_obs(:)))])
@@ -117,10 +107,11 @@ set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 
 nexttile
 hold on
+
 for j = 1:numel(dataClass)
     plot(dataClass{j}.Time - dataClass{j}.Time(1), h_LOS{j}, 'Color', colors{j}, 'LineWidth', 1.05, 'LineStyle', lineStyles{j}, 'DisplayName', names{j});
-    %plot(dataClass{j}.Time(h_LOS{j} < 0), h_LOS{j}(h_LOS{j} < 0), 'Color', colors{j}, 'LineWidth', 1.05, 'LineStyle', lineStyles{j}, 'HandleVisibility', 'off', 'Marker', 'x')
 end
+
 grid
 xlabel("Time [s]")
 ylabel("h_{LOS}")
@@ -143,6 +134,7 @@ ylabel("F_x [N]")
 set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 
 nexttile
+hold on
 for k = 1:numel(dataClass)
     plot(dataClass{k}.Time - dataClass{k}.Time(1), dataClass{k}.RED_Fy, 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
 end
@@ -164,9 +156,11 @@ set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 
 figure
 hold on
+
 for k = 1:numel(dataClass)
-    plot(dataClass{k}.Time - dataClass{k}.Time(1), dataClass{k}.CBF_res(:,1), 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
+    plot(dataClass{k}.CBF_res(:,1), 'Color', colors{k}, 'LineWidth', 1.05, 'LineStyle', lineStyles{k}, 'DisplayName', names{k})
 end
+
 grid
 xlabel("Time [s]")
 ylabel("Convergence")
@@ -176,9 +170,7 @@ legend
 %% Print Impulses
 
 for k = 1:numel(dataClass)
-    fprintf(names{k} + " - Fuel (Actual): " + L_RED{k} + " Ns\n")
-    fprintf(names{k} + " - Fuel (Estimated): " + L_RED2{k} + " Ns\n")
-    fprintf(names{k} + " - Fuel (Actual Saturated): " + L_RED3{k} + " Ns\n")
+    fprintf(names{k} + " - Fuel: " + L_RED{k} + " Ns\n")
 end
 
 %% Functions

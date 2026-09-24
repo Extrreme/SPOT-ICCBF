@@ -18,7 +18,7 @@ QV_h_KOZ_tar = zeros(length(dataClass.Time_s.Data(QV_idx,:)),1);
 QV_h_KOZ_obs = zeros(length(dataClass.Time_s.Data(QV_idx,:)),1);
 
 for j = 1:length(dataClass.Time_s.Data(QV_idx,:))
-    QV_S_tar = diag(1./QV_r_KOZ_tar.^2);
+    QV_S_tar = diag(1./QV_r_KOZ_tar(j,:).^2);
     QV_R_tar = [cos(QV_x_BLACK(j,3)) -sin(QV_x_BLACK(j,3));
                 sin(QV_x_BLACK(j,3))  cos(QV_x_BLACK(j,3))];
 
@@ -28,11 +28,12 @@ for j = 1:length(dataClass.Time_s.Data(QV_idx,:))
 
     QV_R_chs = [cos(QV_x_RED(j,3)) -sin(QV_x_RED(j,3));
                 sin(QV_x_RED(j,3))  cos(QV_x_RED(j,3))];
-    QV_r_LOS = (QV_x_BLACK(j,1:2)'-QV_x_RED(j,1:2)'- QV_R_chs*sensor_offset);
+
+    QV_r_LOS = (QV_x_BLACK(j,1:2)' + QV_R_tar*sensor_target) - (QV_x_RED(j,1:2)' + QV_R_chs*sensor_offset);
 
     QV_h_LOS(j,:) = (QV_r_LOS'*(QV_R_chs*sensor_normal))^2 - QV_r_LOS'*QV_r_LOS*(cos(sensor_FOV))^2;
-    QV_h_KOZ_tar(j,:) = (QV_x_RED(1:2) - QV_x_BLACK(1:2))'*QV_R_tar*QV_S_tar*QV_R_tar'*(QV_x_RED(1:2) - QV_x_BLACK(1:2)) - 1;
-    QV_h_KOZ_obs(j,:) = (QV_x_RED(1:2) - QV_x_BLUE(1:2))'*QV_R_obs*QV_S_obs*QV_R_obs'*(QV_x_RED(1:2) - QV_x_BLUE(1:2)) - 1;
+    QV_h_KOZ_tar(j,:) = (QV_x_RED(j,1:2)' - QV_x_BLACK(j,1:2)')'*QV_R_tar*QV_S_tar*QV_R_tar'*(QV_x_RED(j,1:2)' - QV_x_BLACK(j,1:2)') - 1;
+    QV_h_KOZ_obs(j,:) = (QV_x_RED(j,1:2)' - QV_x_BLUE(j,1:2)')'*QV_R_obs*QV_S_obs*QV_R_obs'*(QV_x_RED(j,1:2)' - QV_x_BLUE(j,1:2)') - 1;
 end
 
 
@@ -42,35 +43,35 @@ tiledlayout(3, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 nexttile
 hold on
 
-plot(dataClass.Time_s.Data(QV_idx,:) - dataClass.Time_s.Data(QV_idx(1),:), h_KOZ_tar, 'Color', 'k', 'LineWidth', 1.05);
-plot(dataClass.Time_s.Data(QV_idx(h_KOZ_tar < 0),:) - dataClass.Time_s.Data(QV_idx(1),:), h_KOZ_tar(h_KOZ_tar < 0), 'Color', 'r', 'LineWidth', 1.05)
+plot(dataClass.Time_s.Data(QV_idx,:) - dataClass.Time_s.Data(QV_idx(1),:), QV_h_KOZ_tar, 'Color', 'k', 'LineWidth', 1.05);
+plot(dataClass.Time_s.Data(QV_idx(QV_h_KOZ_tar < 0),:) - dataClass.Time_s.Data(QV_idx(1),:), QV_h_KOZ_tar(QV_h_KOZ_tar < 0), 'Color', 'r', 'LineWidth', 1.05)
 
 grid
 ylabel("h_{KOZ,tar}")
-ylim([min(h_KOZ_tar(:)) max(h_KOZ_tar(:))])
+ylim([min(QV_h_KOZ_tar(:)) max(QV_h_KOZ_tar(:))])
 set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 
 nexttile
 hold on
 
-plot(dataClass.Time_s.Data(QV_idx,:) - dataClass.Time_s.Data(QV_idx(1),:), h_KOZ_obs, 'Color', 'k', 'LineWidth', 1.05);
-plot(dataClass.Time_s.Data(QV_idx(h_KOZ_obs < 0),:) - dataClass.Time_s.Data(QV_idx(1),:), h_KOZ_obs(h_KOZ_obs < 0), 'Color', 'r', 'LineWidth', 1.05)
+plot(dataClass.Time_s.Data(QV_idx,:) - dataClass.Time_s.Data(QV_idx(1),:), QV_h_KOZ_obs, 'Color', 'k', 'LineWidth', 1.05);
+plot(dataClass.Time_s.Data(QV_idx(QV_h_KOZ_obs < 0),:) - dataClass.Time_s.Data(QV_idx(1),:), QV_h_KOZ_obs(QV_h_KOZ_obs < 0), 'Color', 'r', 'LineWidth', 1.05)
 
 grid on
 ylabel("h_{KOZ,obs}")
-ylim([min(h_KOZ_obs(:)) max(h_KOZ_obs(:))])
+ylim([min(QV_h_KOZ_obs(:)) max(QV_h_KOZ_obs(:))])
 set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 
 nexttile
 hold on
 
-plot(dataClass.Time_s.Data(QV_idx,:) - dataClass.Time_s.Data(QV_idx(1),:), h_LOS, 'Color', 'k', 'LineWidth', 1.05);
-plot(dataClass.Time_s.Data(QV_idx(h_LOS < 0),:) - dataClass.Time_s.Data(QV_idx(1),:), h_LOS(h_LOS < 0), 'Color', 'r', 'LineWidth', 1.05)
+plot(dataClass.Time_s.Data(QV_idx,:) - dataClass.Time_s.Data(QV_idx(1),:), QV_h_LOS, 'Color', 'k', 'LineWidth', 1.05);
+plot(dataClass.Time_s.Data(QV_idx(QV_h_LOS < 0),:) - dataClass.Time_s.Data(QV_idx(1),:), QV_h_LOS(QV_h_LOS < 0), 'Color', 'r', 'LineWidth', 1.05)
 
 grid
 xlabel("Time [s]")
 ylabel("h_{LOS}")
-ylim([min(h_LOS(:)) max(h_LOS(:))])
+ylim([min(QV_h_LOS(:)) max(QV_h_LOS(:))])
 set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 
 %% Plot Forces

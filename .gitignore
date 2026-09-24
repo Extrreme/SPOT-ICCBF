@@ -1,3 +1,6 @@
+# CBF generation
+CBF/CBF_gen/
+
 # Autosave files
 *.asv
 *.m~
@@ -21,10 +24,14 @@
 # Generated helpsearch folders
 helpsearch*/
 
+# Generated executable
+*.elf
+
 # Code generation folders
 slprj/
 sccprj/
 codegen/
+ICCBF_RVD_ert_rtw/
 
 # Cache files
 *.slxc

@@ -48,12 +48,18 @@ function [] = assemble_CBFs(u_max, tv, ic, folder)
     rL = (xt(1:2) + Rt*r_look) - (x(1:2) + Rc*r_cam);
     eL = Rc*e_cam;
     
-    h_LOS = (rL.'*eL)^2 - (rL.'*rL)*(cos(th_FOV)^2);       
+    h_LOS = (rL'*eL)^2 - (rL.'*rL)*(cos(th_FOV)^2);       
 
     [A_LOS, b_LOS, a_LOS] = build_cbf(h_LOS, f([3,6]), g([3,6],3), x([3,6]), u(3), ...
         'TimeVarying', tv, 'TimeVaryingVars', [x([1:2,4:5]); xt], 'TimeVaryingFcn', [f([1:2,4:5]); ft], ...
         'InputConstrained', ic, 'InputLimits', u_max(3));
+    A_LOS = [0, 0, A_LOS];
     
+    % 
+    % [A_LOS, b_LOS, a_LOS] = build_cbf(h_LOS, f, g, x, u, ...
+    %     'TimeVarying', tv, 'TimeVaryingVars', xt, 'TimeVaryingFcn', ft, ...
+    %     'InputConstrained', ic, 'InputLimits', u_max);
+
     % Save CBFs
     matlabFunction(A_KOZ , b_KOZ, h_KOZ, 'File', strcat(folder, 'cbf_KOZ.m'), ...
         'Vars',{x, xt, m, J, r_KOZ, a_KOZ}, ...

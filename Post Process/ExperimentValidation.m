@@ -93,8 +93,8 @@ end
 figure
 tiledlayout(3, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 
-snaps = [0 1/3 2/3 1];
-snapsOpacity = [0.05 0.1 0.25 1];
+snaps = [0 2/16 1/2 1];
+snapsOpacity = [0.05 0.2 0.6 1];
 
 nexttile([3, 1])
 hold on
@@ -104,9 +104,14 @@ for j = 1:numel(sim_trials)
     RED_Px = sim_trials{j}.RED_Px;
     RED_Py = sim_trials{j}.RED_Py;
     RED_Rz = sim_trials{j}.RED_Rz;
+
     BLACK_Px = sim_trials{j}.BLACK_Px;
     BLACK_Py = sim_trials{j}.BLACK_Py;
     BLACK_Rz = sim_trials{j}.BLACK_Rz;
+    
+    BLUE_Px = sim_trials{j}.BLUE_Px;
+    BLUE_Py = sim_trials{j}.BLUE_Py;
+    BLUE_Rz = sim_trials{j}.BLUE_Rz;
 
     patchline(RED_Px(idx_j), RED_Py(idx_j), 'k', 'FaceAlpha', 0, 'LineWidth', 0.6, 'EdgeColor', 'black', 'LineStyle', '--', 'HandleVisibility', 'off');
 end
@@ -117,12 +122,18 @@ for j = 1:numel(exp_trials)
     RED_Px = exp_trials{j}.RED_Px;
     RED_Py = exp_trials{j}.RED_Py;
     RED_Rz = exp_trials{j}.RED_Rz;
+
     BLACK_Px = exp_trials{j}.BLACK_Px;
     BLACK_Py = exp_trials{j}.BLACK_Py;
     BLACK_Rz = exp_trials{j}.BLACK_Rz;
 
+    BLUE_Px = exp_trials{j}.BLUE_Px;
+    BLUE_Py = exp_trials{j}.BLUE_Py;
+    BLUE_Rz = exp_trials{j}.BLUE_Rz;
+
     patchline(RED_Px(idx_j), RED_Py(idx_j), 'r', 'FaceAlpha', 0, 'LineWidth', 0.6, 'EdgeColor', 'red', 'HandleVisibility', 'off');
     patchline(BLACK_Px(idx_j), BLACK_Py(idx_j), 'k', 'FaceAlpha', 0, 'LineWidth', 0.6, 'EdgeColor', 'black', 'HandleVisibility', 'off')
+    patchline(BLUE_Px(idx_j), BLUE_Py(idx_j), 'b', 'FaceAlpha', 0, 'LineWidth', 0.6, 'EdgeColor', 'blue', 'HandleVisibility', 'off')
 
     for k = 1:length(snaps)
         if snaps(k) == 0
@@ -136,6 +147,9 @@ for j = 1:numel(exp_trials)
 
         spacecraft = DrawSpacecraft([BLACK_Px(frame), BLACK_Py(frame), BLACK_Rz(frame), 4]);
         patch(spacecraft(:,1), spacecraft(:,2), 'k', 'FaceAlpha', 0, 'LineWidth', 0.6, 'EdgeColor', 'black', 'EdgeAlpha', snapsOpacity(k), 'HandleVisibility', 'off')
+
+        spacecraft = DrawSpacecraft([BLUE_Px(frame), BLUE_Py(frame), BLUE_Rz(frame), 1]);
+        patch(spacecraft(:,1), spacecraft(:,2), 'b', 'FaceAlpha', 0, 'LineWidth', 0.6, 'EdgeColor', 'blue', 'EdgeAlpha', snapsOpacity(k), 'HandleVisibility', 'off')
     end
 end
 
@@ -153,52 +167,52 @@ ylim([0 yLength]);
 
 xlabel('X-Position [m]')
 ylabel('Y-Position [m]')
-legend('Location', 'northwest')
+% legend('Location', 'northwest')
 
 set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
+% nexttile
+% hold on
+% plot((0:baseRate:(minSize-1)*baseRate)', RED_Px_mean, 'k', 'DisplayName', 'Mean');
+% fill([(0:baseRate:(minSize-1)*baseRate)'; fliplr((0:baseRate:(minSize-1)*baseRate))'], ...
+%      [RED_Px_mean+3*sqrt(RED_Px_var); fliplr((RED_Px_mean-3*sqrt(RED_Px_var))')'], ...
+%      'r', 'FaceAlpha', 0.1, 'EdgeColor', 'r', 'LineStyle', '--', 'DisplayName', '3\sigma Limits');
+% grid on
+% box on
+% ylabel('{\it x}_s [m]')
+% xlim([0 (minSize-1)*baseRate])
+% ylim([0 3.5])
+% legend('Location', 'northoutside', 'NumColumns', 2)
+% set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
+% 
+% nexttile
+% hold on
+% plot((0:baseRate:(minSize-1)*baseRate)', RED_Py_mean, 'k')
+% fill([(0:baseRate:(minSize-1)*baseRate)'; fliplr((0:baseRate:(minSize-1)*baseRate))'], ...
+%      [RED_Py_mean+3*sqrt(RED_Py_var); fliplr((RED_Py_mean-3*sqrt(RED_Py_var))')'], ...
+%      'r', 'FaceAlpha', 0.1, 'EdgeColor', 'r', 'LineStyle', '--', 'DisplayName', '3\sigma Limits');
+% grid on
+% box on
+% ylabel('{\it y}_s [m]')
+% xlim([0 (minSize-1)*baseRate])
+% ylim([0 2.5])
+% set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
+% 
+% nexttile
+% hold on
+% plot((0:baseRate:(minSize-1)*baseRate)', RED_Rz_mean, 'k')
+% fill([(0:baseRate:(minSize-1)*baseRate)'; fliplr((0:baseRate:(minSize-1)*baseRate))'], ...
+%      [RED_Rz_mean+3*sqrt(RED_Rz_var); fliplr((RED_Rz_mean-3*sqrt(RED_Rz_var))')'], ...
+%      'r', 'FaceAlpha', 0.1, 'EdgeColor', 'r', 'LineStyle', '--', 'DisplayName', '3\sigma Limits');
+% grid on
+% box on
+% ylabel('\theta_s [rad]')
+% xlabel('Time [s]')
+% xlim([0 (minSize-1)*baseRate])
+% ylim([-3 1])
 
-nexttile
-hold on
-plot((0:baseRate:(minSize-1)*baseRate)', RED_Px_mean, 'k', 'DisplayName', 'Mean');
-fill([(0:baseRate:(minSize-1)*baseRate)'; fliplr((0:baseRate:(minSize-1)*baseRate))'], ...
-     [RED_Px_mean+3*sqrt(RED_Px_var); fliplr((RED_Px_mean-3*sqrt(RED_Px_var))')'], ...
-     'r', 'FaceAlpha', 0.1, 'EdgeColor', 'r', 'LineStyle', '--', 'DisplayName', '3\sigma Limits');
-grid on
-box on
-ylabel('{\it x}_s [m]')
-xlim([0 (minSize-1)*baseRate])
-ylim([0 3.5])
-legend('Location', 'northoutside', 'NumColumns', 2)
-set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
+% set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
 
-nexttile
-hold on
-plot((0:baseRate:(minSize-1)*baseRate)', RED_Py_mean, 'k')
-fill([(0:baseRate:(minSize-1)*baseRate)'; fliplr((0:baseRate:(minSize-1)*baseRate))'], ...
-     [RED_Py_mean+3*sqrt(RED_Py_var); fliplr((RED_Py_mean-3*sqrt(RED_Py_var))')'], ...
-     'r', 'FaceAlpha', 0.1, 'EdgeColor', 'r', 'LineStyle', '--', 'DisplayName', '3\sigma Limits');
-grid on
-box on
-ylabel('{\it y}_s [m]')
-xlim([0 (minSize-1)*baseRate])
-ylim([0 2.5])
-set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
-
-nexttile
-hold on
-plot((0:baseRate:(minSize-1)*baseRate)', RED_Rz_mean, 'k')
-fill([(0:baseRate:(minSize-1)*baseRate)'; fliplr((0:baseRate:(minSize-1)*baseRate))'], ...
-     [RED_Rz_mean+3*sqrt(RED_Rz_var); fliplr((RED_Rz_mean-3*sqrt(RED_Rz_var))')'], ...
-     'r', 'FaceAlpha', 0.1, 'EdgeColor', 'r', 'LineStyle', '--', 'DisplayName', '3\sigma Limits');
-grid on
-box on
-ylabel('\theta_s [rad]')
-xlabel('Time [s]')
-xlim([0 (minSize-1)*baseRate])
-ylim([-3 1])
-set(gca, 'FontName', 'Times New Roman', 'FontSize', 12)
-
-set(gcf, 'Position', [gcf().Position(1:2), 1160, 420]);
+% set(gcf, 'Position', [gcf().Position(1:2), 1160, 420]);
 set(gcf, 'PaperOrientation', 'landscape');
 set(gcf, 'PaperSize', [18 8.5]);
 
@@ -228,6 +242,10 @@ function [data, idx, exp] = loadData(mat_file)
     data.BLACK_Px = dataClass.BLACK_Px_m.Data(idx,:);
     data.BLACK_Py = dataClass.BLACK_Py_m.Data(idx,:);
     data.BLACK_Rz = dataClass.BLACK_Rz_rad.Data(idx,:);
+
+    data.BLUE_Px = dataClass.BLUE_Px_m.Data(idx,:);
+    data.BLUE_Py = dataClass.BLUE_Py_m.Data(idx,:);
+    data.BLUE_Rz = dataClass.BLUE_Rz_rad.Data(idx,:);
     
     data.RED_Fx = dataClass.RED_Fx_N.Data(idx,:);
     data.RED_Fy = dataClass.RED_Fy_N.Data(idx,:);
@@ -237,7 +255,7 @@ function [data, idx, exp] = loadData(mat_file)
     data.BLACK_Fy = dataClass.BLACK_Fy_N.Data(idx,:);
     data.BLACK_Tz = dataClass.BLACK_Tz_Nm.Data(idx,:);
 
-    data.KOZ = dataClass.Target_KOZ.Data(idx,:);
+    data.KOZ = dataClass.CBF_Target_KOZ_Radius.Data(idx,:);
 
     idx = 1:length(data.time);
 end

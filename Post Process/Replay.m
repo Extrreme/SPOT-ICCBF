@@ -16,13 +16,13 @@ xLength = 3.5;
 baseRate = 0.05;
 
 % Target Line-of-Sight
-sensor_FOV = 40*d2r;                            % Sensor FOV [rad]
-sensor_offset = [0.145-0.042 -0.0395]';         % Sensor body-fixed offset
+sensor_FOV = 35*d2r;                            % Sensor FOV [rad]
+sensor_offset = [0.15 -0.0825]';                % Sensor body-fixed offset
 sensor_normal = [1 0]';                         % Sensor normal vector
 sensor_target = [0.0825 0.2516]';               % Desired pointing location (targed body-fixed) [m,m]
 
 % Obstacle Keep-out-Zone
-r_KOZ_obs = 0.43*[1 1];
+r_KOZ_obs = 0.45*[1 1];
 
 %% Select Data File
 
@@ -36,7 +36,7 @@ end
 
 MAT_FILEPATHS = fullfile(MAT_DIR, MAT_FILES);
 names = {};
-lineStyles = {"-", "--", "-."};
+lineStyles = {"-", "--", "-.", "-", "--", "-."};
 for k = 1:numel(MAT_FILEPATHS)
     if startsWith(MAT_FILES{k}, "ICTVCBF")
         names{k} = "ICTVCBF";
